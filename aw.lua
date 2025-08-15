@@ -1,29 +1,22 @@
-repeat
-	wait()
-until game:IsLoaded() and game:FindFirstChild("CoreGui") and pcall(function()
-	return game.CoreGui
-end)
+repeat wait() until game:IsLoaded() and game:FindFirstChild("CoreGui") and pcall(function() return game.CoreGui end)
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
 local LocalPlayer = Players.LocalPlayer
 local Username = LocalPlayer.Name
 local UserID = LocalPlayer.UserId
 local startTime = os.time()
 local currentStatus = "Initializing script..."
-local request = http_request or request or syn and syn.request
+local request = http_request or request or (syn and syn.request)
 
 repeat task.wait(0.1) until LocalPlayer:GetAttribute("Diamonds")
 local olddiamond = LocalPlayer:GetAttribute("Diamonds") or 0
 
-local webhookUrl = getgenv().webhookUrl
-if not webhookUrl then
-	warn("Please set getgenv().webhookUrl before running the script!")
-	return
-end
+local webhookUrl = _G.webhookUrl
 
 local function formatTime(seconds)
 	local minutes = math.floor(seconds / 60)
@@ -37,7 +30,6 @@ local function updateStatus(status)
 	currentStatus = status
 end
 
--- สร้าง overlay UI
 local function createOverlay()
 	local ScreenGui = Instance.new("ScreenGui")
 	ScreenGui.Name = "AlchemyOverlay"
@@ -176,7 +168,6 @@ end
 local overlay = createOverlay()
 overlay.Parent = game:GetService("CoreGui")
 
-local TeleportService = game:GetService("TeleportService")
 repeat task.wait(1) until game:IsLoaded() and Players.LocalPlayer
 
 task.wait(5)
@@ -186,8 +177,7 @@ if game.PlaceId ~= 126509999114328 then
 end
 
 local function serverhop()
-	local PlaceId = game.PlaceId
-	TeleportService:Teleport(PlaceId)
+	TeleportService:Teleport(game.PlaceId)
 end
 
 repeat task.wait(1) until LocalPlayer
@@ -214,8 +204,7 @@ end
 
 task.spawn(function()
 	while true do
-		local alldiamond = workspace.Items
-		for _, diamond in pairs(alldiamond:GetDescendants()) do
+		for _, diamond in pairs(workspace.Items:GetDescendants()) do
 			if diamond:IsA("Model") and string.find(diamond.Name, "Diamond") then
 				ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("RequestTakeDiamonds"):FireServer(diamond)
 			end
@@ -231,13 +220,12 @@ local foundchest = false
 task.spawn(function()
 	while true do
 		local chestFoundThisRound = false
-		local allchest = workspace.Items
-		for _, chest in pairs(allchest:GetChildren()) do
+		for _, chest in pairs(workspace.Items:GetChildren()) do
 			if string.find(chest.Name, "Chest") and not string.find(chest.Name, "Lid") and not string.find(chest.Name, "Snow") then
 				foundchest = true
 				if hrp and hrp.Character and hrp.Character.HumanoidRootPart then
 					hrp.Character.Humanoid.Sit = true
-					hrp.Character.HumanoidRootPart.CFrame = chest.WorldPivot*CFrame.new(0,3,0)
+					hrp.Character.HumanoidRootPart.CFrame = chest.WorldPivot * CFrame.new(0,3,0)
 				end
 				for _, main1 in pairs(chest:GetChildren()) do
 					if main1:IsA("BasePart") and main1.Name == "Main" then
@@ -286,11 +274,11 @@ task.spawn(function()
 			local maindiamond = LocalPlayer:GetAttribute("Diamonds") or 0
 			local earned = maindiamond - olddiamond
 
-			if typeof(request) == "function" then
+			if webhookUrl and typeof(request) == "function" then
 				pcall(function()
 					local data = {
 						content = nil,
-						embeds = { {
+						embeds = {{
 							title = "Alchemy Hub.",
 							color = 5630976,
 							fields = {
@@ -298,10 +286,8 @@ task.spawn(function()
 								{ name = "💎  Earned :", value = "|| " .. tostring(earned) .. " ||" }
 							},
 							footer = { text = "This webhook system make by discord.gg/alchemyhub" },
-							thumbnail = {
-								url = "https://cdn.discordapp.com/attachments/1393668256753254402/1405855945245982832/AlchemyNeta.png"
-							}
-						} },
+							thumbnail = { url = "https://cdn.discordapp.com/attachments/1393668256753254402/1405855945245982832/AlchemyNeta.png" }
+						}},
 						attachments = {}
 					}
 					request({
