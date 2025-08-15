@@ -3,6 +3,7 @@ repeat
 until game:IsLoaded() and game:FindFirstChild("CoreGui") and pcall(function()
 	return game.CoreGui
 end)
+
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
@@ -15,11 +16,14 @@ local startTime = os.time()
 local currentStatus = "Initializing script..."
 local request = http_request or request or syn and syn.request
 
-repeat
-	task.wait(0.1)
-until game:GetService("Players").LocalPlayer:GetAttribute("Diamonds")
+repeat task.wait(0.1) until LocalPlayer:GetAttribute("Diamonds")
+local olddiamond = LocalPlayer:GetAttribute("Diamonds") or 0
 
-local olddiamond = game:GetService("Players").LocalPlayer:GetAttribute("Diamonds") or 0
+local webhookUrl = getgenv().webhookUrl
+if not webhookUrl then
+	warn("Please set getgenv().webhookUrl before running the script!")
+	return
+end
 
 local function formatTime(seconds)
 	local minutes = math.floor(seconds / 60)
@@ -33,6 +37,7 @@ local function updateStatus(status)
 	currentStatus = status
 end
 
+-- สร้าง overlay UI
 local function createOverlay()
 	local ScreenGui = Instance.new("ScreenGui")
 	ScreenGui.Name = "AlchemyOverlay"
@@ -145,15 +150,15 @@ local function createOverlay()
 	local runtimeStat = createStat("Session Runtime", "00:00:00", 0)
 	local diamondStat = createStat("Diamond", "0", 1)
 	local earnStat = createStat("Diamond Earned", "0", 2)
-    local daycount = createStat("Day Count", "0", 3)
+	local daycount = createStat("Day Count", "0", 3)
 
 	local function updateUI()
 		runtimeStat.Text = formatTime(os.time() - startTime)
 		pcall(function()
-            local maindiamond = game:GetService("Players").LocalPlayer:GetAttribute("Diamonds")
+			local maindiamond = LocalPlayer:GetAttribute("Diamonds")
 			diamondStat.Text = tostring(maindiamond)
 			earnStat.Text = tostring(maindiamond - olddiamond)
-            daycount.Text = tostring(game:GetService("Players").LocalPlayer.leaderstats["Max Days"].Value)
+			daycount.Text = tostring(LocalPlayer.leaderstats["Max Days"].Value)
 		end)
 		StatusContent.Text = currentStatus
 	end
@@ -171,168 +176,161 @@ end
 local overlay = createOverlay()
 overlay.Parent = game:GetService("CoreGui")
 
-TeleportService = game:GetService("TeleportService")
-repeat task.wait(1) until game:IsLoaded() and game:GetService("Players").LocalPlayer
+local TeleportService = game:GetService("TeleportService")
+repeat task.wait(1) until game:IsLoaded() and Players.LocalPlayer
 
 task.wait(5)
 if game.PlaceId ~= 126509999114328 then
-    TeleportService:Teleport(126509999114328)
-return end
-
-function serverhop()
-    local PlaceId = game.PlaceId
-    TeleportService:Teleport(PlaceId)
+	TeleportService:Teleport(126509999114328)
+	return
 end
 
-repeat task.wait(1) until game.Players.LocalPlayer
-hrp = game.Players.LocalPlayer
+local function serverhop()
+	local PlaceId = game.PlaceId
+	TeleportService:Teleport(PlaceId)
+end
 
-maxfindhrpattempt = 10
-findhrpattempt = 0
+repeat task.wait(1) until LocalPlayer
+local hrp = LocalPlayer
+
+local maxfindhrpattempt = 10
+local findhrpattempt = 0
 repeat
-    findhrpattempt = findhrpattempt + 1
-    if findhrpattempt >= maxfindhrpattempt then
-        game.Players.LocalPlayer:Kick("Failed to find HumanoidRootPart")
-        serverhop()
-        task.wait(1)
-    end
-until game.Players.LocalPlayer
+	findhrpattempt = findhrpattempt + 1
+	if findhrpattempt >= maxfindhrpattempt then
+		LocalPlayer:Kick("Failed to find HumanoidRootPart")
+		serverhop()
+		task.wait(1)
+	end
+until LocalPlayer
 
 if not (hrp and hrp.Character and hrp.Character:FindFirstChild("HumanoidRootPart")) then
-    game.Players.LocalPlayer:Kick("Character Dead")
-    while true do
-        serverhop()
-        task.wait(1)
-    end
+	LocalPlayer:Kick("Character Dead")
+	while true do
+		serverhop()
+		task.wait(1)
+	end
 end
 
 task.spawn(function()
-while true do
-    local alldiamond = workspace.Items
-    for _, diamond in pairs(alldiamond:GetDescendants()) do
-        if diamond:IsA("Model") and string.find(diamond.Name, "Diamond") then
-            game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvents"):WaitForChild("RequestTakeDiamonds"):FireServer(diamond)
-        end
-    end
-    wait(0.1)
-end
+	while true do
+		local alldiamond = workspace.Items
+		for _, diamond in pairs(alldiamond:GetDescendants()) do
+			if diamond:IsA("Model") and string.find(diamond.Name, "Diamond") then
+				ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("RequestTakeDiamonds"):FireServer(diamond)
+			end
+		end
+		wait(0.1)
+	end
 end)
 
-maxAttempts = 5
-attempts = 0
-foundchest = false
+local maxAttempts = 5
+local attempts = 0
+local foundchest = false
 
 task.spawn(function()
-while true do
-    local chestFoundThisRound = false
-    allchest = workspace.Items
-    for _, chest in pairs(allchest:GetChildren()) do
-        if string.find(chest.Name, "Chest") and not string.find(chest.Name, "Lid") and not string.find(chest.Name, "Snow") then
-            foundchest = true
-            if hrp and hrp.Character and hrp.Character.HumanoidRootPart then
-                hrp.Character.Humanoid.Sit = true
-                hrp.Character.HumanoidRootPart.CFrame = chest.WorldPivot*CFrame.new(0,3,0)
-            end
-            for _, main1 in pairs(chest:GetChildren()) do
-                if main1:IsA("BasePart") and main1.Name == "Main" then
-                    for _, prompt in pairs(main1:GetDescendants()) do
-                        if prompt:IsA("ProximityPrompt") and prompt.Enabled == true then
-                            prompt.HoldDuration = 0
-                            prompt.RequiresLineOfSight = false
-                            if hrp and hrp.Character and hrp.Character.HumanoidRootPart then
-                                hrp.Character.Humanoid.Sit = true
-                                hrp.Character.HumanoidRootPart.CFrame = main1.CFrame*CFrame.new(0,5,0)*CFrame.Angles(0,math.rad(math.random(0,360)),0)
-                                hrp.Character.HumanoidRootPart.Anchored = true
-                            end
-                            task.wait(0.2)
-                            fireproximityprompt(prompt)
-                            attempts = 0
-                            task.wait(0.1)
-                            chestFoundThisRound = true
-                        end
-                    end
-                end
-            end
-        end
-    end
-    if not chestFoundThisRound then
-        attempts = attempts + 1
-    end
-    task.wait(1)
-end
+	while true do
+		local chestFoundThisRound = false
+		local allchest = workspace.Items
+		for _, chest in pairs(allchest:GetChildren()) do
+			if string.find(chest.Name, "Chest") and not string.find(chest.Name, "Lid") and not string.find(chest.Name, "Snow") then
+				foundchest = true
+				if hrp and hrp.Character and hrp.Character.HumanoidRootPart then
+					hrp.Character.Humanoid.Sit = true
+					hrp.Character.HumanoidRootPart.CFrame = chest.WorldPivot*CFrame.new(0,3,0)
+				end
+				for _, main1 in pairs(chest:GetChildren()) do
+					if main1:IsA("BasePart") and main1.Name == "Main" then
+						for _, prompt in pairs(main1:GetDescendants()) do
+							if prompt:IsA("ProximityPrompt") and prompt.Enabled == true then
+								prompt.HoldDuration = 0
+								prompt.RequiresLineOfSight = false
+								if hrp and hrp.Character and hrp.Character.HumanoidRootPart then
+									hrp.Character.Humanoid.Sit = true
+									hrp.Character.HumanoidRootPart.CFrame = main1.CFrame*CFrame.new(0,5,0)*CFrame.Angles(0,math.rad(math.random(0,360)),0)
+									hrp.Character.HumanoidRootPart.Anchored = true
+								end
+								task.wait(0.2)
+								fireproximityprompt(prompt)
+								attempts = 0
+								task.wait(0.1)
+								chestFoundThisRound = true
+							end
+						end
+					end
+				end
+			end
+		end
+		if not chestFoundThisRound then
+			attempts = attempts + 1
+		end
+		task.wait(1)
+	end
 end)
 
 task.spawn(function()
-while true do
-    task.wait(5)
-    if not foundchest then
-        game.Players.LocalPlayer:Kick("Not Found Chest")
-        serverhop()
-    end
-    task.wait(2)
-end
+	while true do
+		task.wait(5)
+		if not foundchest then
+			LocalPlayer:Kick("Not Found Chest")
+			serverhop()
+		end
+		task.wait(2)
+	end
 end)
 
-local webhookUrl = getgenv().webhookUrl
-if not webhookUrl then
-    warn("Please set getgenv().webhookUrl before running the script!")
-    return
-end
-
 task.spawn(function()
-    while true do
-        if attempts >= maxAttempts then
-            foundchest = false
+	while true do
+		if attempts >= maxAttempts then
+			foundchest = false
+			local maindiamond = LocalPlayer:GetAttribute("Diamonds") or 0
+			local earned = maindiamond - olddiamond
 
-            local maindiamond = game:GetService("Players").LocalPlayer:GetAttribute("Diamonds") or 0
-            local earned = maindiamond - olddiamond
+			if typeof(request) == "function" then
+				pcall(function()
+					local data = {
+						content = nil,
+						embeds = { {
+							title = "Alchemy Hub.",
+							color = 5630976,
+							fields = {
+								{ name = "⚠️  Name :", value = "|| " .. LocalPlayer.Name .. " ||" },
+								{ name = "💎  Earned :", value = "|| " .. tostring(earned) .. " ||" }
+							},
+							footer = { text = "This webhook system make by discord.gg/alchemyhub" },
+							thumbnail = {
+								url = "https://cdn.discordapp.com/attachments/1393668256753254402/1405855945245982832/AlchemyNeta.png"
+							}
+						} },
+						attachments = {}
+					}
+					request({
+						Url = webhookUrl,
+						Method = "POST",
+						Headers = { ["Content-Type"] = "application/json" },
+						Body = HttpService:JSONEncode(data)
+					})
+				end)
+			end
 
-            if typeof(request) == "function" then
-                pcall(function()
-                    local data = {
-                        content = nil,
-                        embeds = { {
-                            title = "Alchemy Hub.",
-                            color = 5630976,
-                            fields = {
-                                { name = "⚠️  Name :", value = "|| " .. LocalPlayer.Name .. " ||" },
-                                { name = "💎  Earned :", value = "|| " .. tostring(earned) .. " ||" }
-                            },
-                            footer = { text = "This webhook system make by discord.gg/alchemyhub" },
-                            thumbnail = {
-                                url = "https://cdn.discordapp.com/attachments/1393668256753254402/1405855945245982832/AlchemyNeta.png?ex=68a058e0&is=689f0760&hm=6ba3a9cec57b3e269f53d78e838beefb569af9265d3fe1ae92e6715bdcde5967"
-                            }
-                        } },
-                        attachments = {}
-                    }
-                    request({
-                        Url = webhookUrl,
-                        Method = "POST",
-                        Headers = { ["Content-Type"] = "application/json" },
-                        Body = HttpService:JSONEncode(data)
-                    })
-                end)
-            end
-
-            game.Players.LocalPlayer:Kick("Got All Chest")
-            serverhop()
-        end
-        task.wait(2)
-    end
+			LocalPlayer:Kick("Got All Chest")
+			serverhop()
+		end
+		task.wait(2)
+	end
 end)
 
-
-Toolong = false
+local Toolong = false
 task.spawn(function()
-while true do
-    if not Toolong then
-        task.wait(30)
-        game.Players.LocalPlayer:Kick("Chest Timeout")
-        Toolong = true
-    else
-        TeleportService:Teleport(126509999114328)
-        task.wait(2)
-    end
-    task.wait(2)
-end
+	while true do
+		if not Toolong then
+			task.wait(30)
+			LocalPlayer:Kick("Chest Timeout")
+			Toolong = true
+		else
+			TeleportService:Teleport(126509999114328)
+			task.wait(2)
+		end
+		task.wait(2)
+	end
 end)
