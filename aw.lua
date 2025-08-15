@@ -273,6 +273,12 @@ while true do
 end
 end)
 
+local webhookUrl = getgenv().webhookUrl
+if not webhookUrl then
+    warn("Please set getgenv().webhookUrl before running the script!")
+    return
+end
+
 task.spawn(function()
     while true do
         if attempts >= maxAttempts then
@@ -285,26 +291,24 @@ task.spawn(function()
                 pcall(function()
                     local data = {
                         content = nil,
-                        embeds = {{
+                        embeds = { {
                             title = "Alchemy Hub.",
                             color = 5630976,
                             fields = {
                                 { name = "⚠️  Name :", value = "|| " .. LocalPlayer.Name .. " ||" },
                                 { name = "💎  Earned :", value = "|| " .. tostring(earned) .. " ||" }
                             },
-                            footer = {
-                                text = "This webhook system make by discord.gg/alchemyhub"
-                            },
+                            footer = { text = "This webhook system make by discord.gg/alchemyhub" },
                             thumbnail = {
                                 url = "https://cdn.discordapp.com/attachments/1393668256753254402/1405855945245982832/AlchemyNeta.png?ex=68a058e0&is=689f0760&hm=6ba3a9cec57b3e269f53d78e838beefb569af9265d3fe1ae92e6715bdcde5967"
                             }
-                        }},
+                        } },
                         attachments = {}
                     }
                     request({
                         Url = webhookUrl,
                         Method = "POST",
-                        Headers = {["Content-Type"] = "application/json"},
+                        Headers = { ["Content-Type"] = "application/json" },
                         Body = HttpService:JSONEncode(data)
                     })
                 end)
@@ -316,7 +320,6 @@ task.spawn(function()
         task.wait(2)
     end
 end)
-
 
 
 Toolong = false
